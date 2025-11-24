@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <!-- 關鍵：RWD 與手機適配設定 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#240046">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <title>紫微基因塔羅解碼</title>
+    
+    <style>
+        /* --- 全域變數與重置 --- */
+        :root {
+            --primary: #7b2cbf;
+            --bg: #10002b;
+            --card: #240046;
+            --accent: #ff9e00;
+            --text: #ffffff;
+            --timeline-line: rgba(255, 158, 0, 0.3);
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            background-image: linear-gradient(160deg, #10002b 0%, #3c096c 100%);
+            padding-bottom: 50px; /* 手機底部留白 */
+        }
+        .container { width: 100%; max-width: 480px; margin: 0 auto; padding: 20px; }
+
+        /* --- Header --- */
+        .header { text-align: center; margin: 15px 0 25px; }
+        .logo { font-size: 3.5rem; animation: float 3s ease-in-out infinite; display: inline-block; text-shadow: 0 0 20px rgba(123, 44, 191, 0.6); }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .title { font-size: 1.8rem; margin: 5px 0; color: #e0aaff; letter-spacing: 1px; font-weight: 800; }
+        .subtitle { font-size: 0.9rem; color: #9d4edd; opacity: 0.9; }
+
+        /* --- 輸入表單 --- */
+        .input-card {
+            background: rgba(36, 0, 70, 0.6); backdrop-filter: blur(10px);
+            padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3); animation: fadeIn 0.8s;
+        }
+        .form-group { margin-bottom: 20px; }
+        .label { display: block; margin-bottom: 8px; color: #c77dff; font-size: 0.95rem; }
+        input, select {
+            width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #5a189a;
+            background: rgba(0,0,0,0.3); color: #fff; font-size: 16px; outline: none;
+            appearance: none; /* 移除原生樣式 */
+        }
+        .btn-main {
+            width: 100%; padding: 16px; border-radius: 50px; border: none;
+            background: linear-gradient(90deg, #7b2cbf, #ff9e00); color: white;
+            font-size: 1.2rem; font-weight: bold; margin-top: 10px; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 158, 0, 0.4); transition: transform 0.2s;
+        }
+        .btn-main:active { transform: scale(0.98); }
+
+        /* --- 結果區 --- */
+        #result-section { display: none; animation: slideUp 0.5s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 身份卡 */
+        .identity-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 20px;
+            display: flex; align-items: center; gap: 15px; margin-bottom: 20px; position: relative; overflow: hidden;
+        }
+        .star-icon { font-size: 2.5rem; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 50%; }
+        .id-info h2 { margin: 0; font-size: 1.6rem; color: var(--accent); }
+        .id-info p { margin: 5px 0 0; opacity: 0.8; font-size: 0.9rem; }
+        .blood-tag { position: absolute; top: 20px; right: 20px; background: #d00000; font-size: 0.85rem; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
+
+        /* Tabs */
+        .main-tabs { display: flex; background: #1a0b2e; border-radius: 15px; padding: 5px; margin-bottom: 20px; border: 1px solid #3c096c;}
+        .tab-btn { flex: 1; text-align: center; padding: 12px; border-radius: 12px; color: #aaa; cursor: pointer; transition: 0.3s; font-size: 1rem; font-weight: 500;}
+        .tab-btn.active { background: var(--card); color: var(--accent); font-weight: bold; box-shadow: 0 2px 10px rgba(0,0,0,0.3); border: 1px solid var(--accent); }
+
+        .content-view { display: none; }
+        .content-view.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* === VIEW 1: 今日運勢 === */
+        .daily-box {
+            background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 25px;
+            border: 1px solid #5a189a; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .date-badge { background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; display: inline-block; margin-bottom: 15px; color: #e0aaff; letter-spacing: 1px;}
+        .lucky-row { display: flex; justify-content: space-between; margin-bottom: 20px; text-align: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 15px;}
+        .lucky-item { flex: 1; }
+        .lucky-val { font-size: 1.1rem; font-weight: bold; color: var(--accent); display: block; margin-bottom: 5px;}
+        .lucky-label { font-size: 0.8rem; opacity: 0.7; }
+        .yi-ji-row { display: flex; gap: 10px; margin-bottom: 20px; }
+        .yj-card { flex: 1; padding: 12px; border-radius: 12px; font-size: 0.95rem; line-height: 1.4; }
+        .yi { background: rgba(6, 214, 160, 0.1); border: 1px solid #06d6a0; color: #a7f3d0; }
+        .ji { background: rgba(239, 71, 111, 0.1); border: 1px solid #ef476f; color: #fecaca; }
+        .daily-msg { line-height: 1.6; font-size: 1rem; color: #eee; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-align: justify;}
+
+        /* === 塔羅區 === */
+        .tarot-section {
+            background: linear-gradient(180deg, #2d0036 0%, #19002e 100%);
+            border-radius: 20px; padding: 25px 20px; text-align: center;
+            border: 2px solid #ffd700; position: relative; overflow: hidden; box-shadow: 0 0 25px rgba(255, 215, 0, 0.15);
+        }
+        .tarot-title { color: #ffd700; font-size: 1.3rem; margin-bottom: 15px; font-weight: bold; letter-spacing: 2px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);}
+        .card-scene { width: 140px; height: 220px; perspective: 1000px; margin: 0 auto 20px; cursor: pointer; }
+        .card-obj { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .card-obj.is-flipped { transform: rotateY(180deg); }
+        .card-face {
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .card-back {
+            background: radial-gradient(circle, #4a148c 0%, #1a0b2e 100%); border: 3px solid #ffd700;
+            background-image: repeating-linear-gradient(45deg, rgba(255,215,0,0.05) 0px, rgba(255,215,0,0.05) 2px, transparent 2px, transparent 10px);
+        }
+        .card-back::after { content: "★"; font-size: 4rem; color: #ffd700; opacity: 0.3; }
+        .card-front { background: #fff; color: #333; transform: rotateY(180deg); border: 4px solid #ffd700; }
+        .tarot-img { font-size: 5rem; margin-bottom: 10px; }
+        .tarot-name { font-size: 1.4rem; font-weight: bold; color: #240046; margin-bottom: 5px; }
+        .tarot-key { font-size: 0.9rem; color: #555; background: #eee; padding: 4px 12px; border-radius: 15px; }
+        .tarot-desc-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; text-align: left; display: none; animation: fadeIn 1s; margin-top: 15px;}
+        .tarot-btn { background: transparent; border: 1px solid #ffd700; color: #ffd700; padding: 8px 25px; border-radius: 20px; margin-top: 15px; cursor: pointer; font-size: 0.9rem;}
+
+        /* === VIEW 2: 人生流年 === */
+        .sub-nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 25px; }
+        .sub-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: #bbb; padding: 12px 0; border-radius: 10px; font-size: 0.9rem; cursor: pointer; text-align: center; transition: 0.3s;
+        }
+        .sub-btn.active { background: var(--primary); color: white; border-color: var(--accent); box-shadow: 0 0 15px rgba(123, 44, 191, 0.6); transform: translateY(-2px); font-weight: bold;}
+
+        .timeline { padding-left: 10px; }
+        .tl-item { position: relative; padding-left: 35px; margin-bottom: 35px; border-left: 2px solid var(--timeline-line); }
+        .tl-item:last-child { border-left: 2px solid transparent; }
+        .tl-dot { position: absolute; left: -9px; top: 0; width: 16px; height: 16px; border-radius: 50%; background: var(--bg); border: 3px solid var(--accent); box-shadow: 0 0 15px var(--accent); }
+        .tl-time { font-size: 0.85rem; color: var(--accent); margin-bottom: 5px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
+        .tl-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; color: #fff; }
+        .tl-content { font-size: 1rem; line-height: 1.7; color: #d0d0d0; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; }
+        .fade-in-text { animation: textFade 0.6s ease-in-out; }
+        @keyframes textFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Loading */
+        .loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(16, 0, 43, 0.98); display: none;
+            justify-content: center; align-items: center; flex-direction: column; z-index: 999;
+        }
+        .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s infinite linear; margin-bottom: 20px;}
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <span class="logo">🔮</span>
+            <h1 class="title">紫微基因解碼</h1>
+            <div class="subtitle">紫微 ‧ 塔羅 ‧ 基因全方位分析</div>
+        </div>
+
+        <!-- 輸入表單 -->
+        <div class="input-card" id="input-form">
+            <div class="form-group">
+                <label class="label">姓名</label>
+                <input type="text" id="username" placeholder="請輸入您的姓名">
+            </div>
+            <div class="form-group">
+                <label class="label">血型 (基因特質)</label>
+                <select id="blood">
+                    <option value="A">A 型</option>
+                    <option value="B">B 型</option>
+                    <option value="O">O 型</option>
+                    <option value="AB">AB 型</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="label">出生日期</label>
+                <input type="date" id="birthdate">
+            </div>
+            <div class="form-group">
+                <label class="label">出生時辰</label>
+                <select id="birthtime">
+                    <option value="23">子時 (23-01)</option>
+                    <option value="1">丑時 (01-03)</option>
+                    <option value="3">寅時 (03-05)</option>
+                    <option value="5">卯時 (05-07)</option>
+                    <option value="7">辰時 (07-09)</option>
+                    <option value="9">巳時 (09-11)</option>
+                    <option value="11">午時 (11-13)</option>
+                    <option value="13">未時 (13-15)</option>
+                    <option value="15">申時 (15-17)</option>
+                    <option value="17">酉時 (17-19)</option>
+                    <option value="19">戌時 (19-21)</option>
+                    <option value="21">亥時 (21-23)</option>
+                </select>
+            </div>
+            <button class="btn-main" onclick="analyze()">啟動大數據分析</button>
+        </div>
+
+        <!-- 結果顯示區 -->
+        <div id="result-section">
+            
+            <!-- 身份卡 -->
+            <div class="identity-card">
+                <div class="star-icon">🌟</div>
+                <div class="id-info">
+                    <h2 id="user-star">紫微星</h2>
+                    <p id="user-desc">五行屬土 ‧ 帝王之相</p>
+                </div>
+                <span class="blood-tag" id="user-blood">A 型</span>
+            </div>
+
+            <!-- 主頁籤 -->
+            <div class="main-tabs">
+                <div class="tab-btn active" onclick="switchMainTab('daily')">📅 今日運勢</div>
+                <div class="tab-btn" onclick="switchMainTab('life')">🔮 人生流年</div>
+            </div>
+
+            <!-- VIEW 1: 今日運勢 -->
+            <div id="view-daily" class="content-view active">
+                <!-- 紫微運勢 -->
+                <div class="daily-box">
+                    <span class="date-badge" id="today-date">2023/01/01</span>
+                    <div class="lucky-row">
+                        <div class="lucky-item">
+                            <span class="lucky-val" id="d-color">金色</span>
+                            <span class="lucky-label">幸運色</span>
+                        </div>
+                        <div class="lucky-item">
+                            <span class="lucky-val" id="d-num">8</span>
+                            <span class="lucky-label">幸運數</span>
+                        </div>
+                        <div class="lucky-item">
+                            <span class="lucky-val" id="d-dir">北方</span>
+                            <span class="lucky-label">吉方位</span>
+                        </div>
+                    </div>
+                    <div class="yi-ji-row">
+                        <div class="yj-card yi"><strong>🟢 宜</strong><br><span id="d-yi">--</span></div>
+                        <div class="yj-card ji"><strong>🔴 忌</strong><br><span id="d-ji">--</span></div>
+                    </div>
+                    <div class="daily-msg" id="d-advice">正在讀取星象...</div>
+                </div>
+
+                <!-- 塔羅互動 -->
+                <div class="tarot-section">
+                    <div class="tarot-title">🃏 每日塔羅指引</div>
+                    <p style="font-size:0.85rem; color:#bbb; margin-bottom:20px;">冥想今日的行程，點擊卡背翻牌</p>
+                    <div class="card-scene" onclick="flipTarot()">
+                        <div class="card-obj" id="tarot-obj">
+                            <div class="card-face card-back"></div>
+                            <div class="card-face card-front">
+                                <div class="tarot-img" id="tarot-img">🎩</div>
+                                <div class="tarot-name" id="tarot-name">魔術師</div>
+                                <div class="tarot-key" id="tarot-key">創造力</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tarot-desc-box" id="tarot-desc-box">
+                        <strong style="color:#ffd700; display:block; margin-bottom:8px; font-size:1.1rem;">🔮 牌義解析：</strong>
+                        <span id="tarot-desc" style="color:#eee; line-height:1.5;"></span>
+                        <div style="text-align:center;">
+                            <button class="tarot-btn" onclick="resetTarot(event)">↺ 重新洗牌</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: 人生流年 -->
+            <div id="view-life" class="content-view">
+                <div class="sub-nav">
+                    <div class="sub-btn active" onclick="switchLifeSubTab('career')">💼 事業</div>
+                    <div class="sub-btn" onclick="switchLifeSubTab('love')">❤️ 感情</div>
+                    <div class="sub-btn" onclick="switchLifeSubTab('family')">🏠 家庭</div>
+                    <div class="sub-btn" onclick="switchLifeSubTab('health')">💪 健康</div>
+                </div>
+                <div class="timeline">
+                    <div class="tl-item">
+                        <div class="tl-dot"></div>
+                        <div class="tl-time">PAST ‧ 先天基因</div>
+                        <div class="tl-title">早年運程</div>
+                        <div class="tl-content" id="tl-past">分析中...</div>
+                    </div>
+                    <div class="tl-item">
+                        <div class="tl-dot"></div>
+                        <div class="tl-time">PRESENT ‧ 當下機遇</div>
+                        <div class="tl-title">近期發展</div>
+                        <div class="tl-content" id="tl-present">分析中...</div>
+                    </div>
+                    <div class="tl-item">
+                        <div class="tl-dot"></div>
+                        <div class="tl-time">FUTURE ‧ 命運展望</div>
+                        <div class="tl-title">未來走向</div>
+                        <div class="tl-content" id="tl-future">分析中...</div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="location.reload()" style="width:100%; padding:15px; background:transparent; border:1px solid #666; color:#aaa; border-radius:12px; margin-top:30px; font-size:1rem;">↺ 重新輸入資料</button>
+        </div>
+    </div>
+
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <p style="color:white; margin-top:15px; font-weight:bold; letter-spacing:1px;">星象大數據運算中...</p>
+    </div>
+
+    <script>
+        // --- 資料庫 ---
+        const starTraits = {
+            "紫微星": { type: "土", career: "領導統御/創業管理/高層決策", love: "眼光高/主導權強/重視尊嚴", family: "一家之主/責任重大/子女優秀", health: "脾胃/精神壓力/頭痛" },
+            "天機星": { type: "木", career: "企劃分析/特助幕僚/科技研發", love: "心思細膩/容易多疑/精神契合", family: "兄弟緣佳/變動較多/需多溝通", health: "神經系統/四肢/睡眠" },
+            "太陽星": { type: "火", career: "公眾事務/外交公關/熱心助人", love: "熱情直接/付出較多/因愛而累", family: "父慈子孝/為家奔波/光耀門楣", health: "心血管/眼部/血壓" },
+            "武曲星": { type: "金", career: "金融投資/軍警檢法/實業家", love: "剛毅木訥/實際行動/少點浪漫", family: "管教嚴格/財權在握/略顯嚴肅", health: "呼吸系統/牙齒/骨骼" },
+            "天同星": { type: "水", career: "餐飲旅遊/休閒產業/行政庶務", love: "溫柔被動/容易感動/享受被愛", family: "相處融洽/氣氛和諧/有福氣", health: "腎臟/膀胱/水腫" },
+            "廉貞星": { type: "火", career: "外交公關/藝術設計/精密作業", love: "愛恨分明/佔有欲強/桃花旺盛", family: "親情濃厚/情緒起伏/需多包容", health: "心火旺/失眠/血液循環" },
+            "天府星": { type: "土", career: "庫房管理/地產經營/穩定保守", love: "重視條件/穩重務實/細水長流", family: "購置田產/家庭富足/長輩緣佳", health: "脾胃/消化系統/體重" },
+            "太陰星": { type: "水", career: "財務會計/護理照護/房產投資", love: "溫柔婉約/情感豐富/追求浪漫", family: "重視整潔/母性光輝/居家生活", health: "婦科/內分泌/泌尿系統" },
+            "貪狼星": { type: "水", career: "演藝娛樂/業務行銷/教育訓練", love: "長袖善舞/多采多姿/異性緣佳", family: "社交頻繁/開放開明/不喜約束", health: "肝膽/排毒功能/關節" },
+            "巨門星": { type: "水", career: "律師法務/教師講師/評論分析", love: "溝通障礙/易生口角/需多信任", family: "意見較多/隔閡誤會/需多傾聽", health: "呼吸道/腸胃/口腔" },
+            "天相星": { type: "水", career: "秘書特助/服務諮詢/形象管理", love: "外貌協會/體貼入微/夫唱婦隨", family: "和樂融融/互相扶持/衣食無憂", health: "皮膚/過敏/腎臟" },
+            "天梁星": { type: "土", career: "醫療服務/公務人員/顧問指導", love: "老夫少妻/照顧對方/成熟穩重", family: "長幼有序/蔭庇子孫/傳統保守", health: "脾胃/慢性病/脊椎" },
+            "七殺星": { type: "金", career: "業務開發/工程建設/獨立創業", love: "敢愛敢恨/閃婚閃離/個性剛烈", family: "聚少離多/獨立自主/較少依賴", health: "外傷/肺部/大腸" },
+            "破軍星": { type: "水", career: "創意設計/貿易運輸/破舊立新", love: "喜新厭舊/不喜束縛/轟轟烈烈", family: "變動搬遷/觀念新潮/代溝較深", health: "生殖系統/腎臟/心臟" }
+        };
+
+        const tarotDeck = [
+            { name: "愚者", icon: "🤡", key: "新開始", desc: "大膽邁出第一步，不要畏懼未知的挑戰，保持純真的心。" },
+            { name: "魔術師", icon: "🎩", key: "創造力", desc: "你擁有實現目標所需的一切資源，發揮你的才能吧。" },
+            { name: "女祭司", icon: "📜", key: "直覺", desc: "靜下心來傾聽內心的聲音，答案就在你的潛意識裡。" },
+            { name: "女皇", icon: "👸", key: "豐盛", desc: "享受生活中的美好與富足，這是一個充滿創造力與愛的日子。" },
+            { name: "皇帝", icon: "👑", key: "權威", desc: "展現你的領導力與自律，建立穩固的基礎與秩序。" },
+            { name: "教皇", icon: "⛪", key: "指引", desc: "尋求傳統的智慧或長輩的建議，這能幫助你解決困惑。" },
+            { name: "戀人", icon: "💕", key: "選擇", desc: "面臨重要的決定，請追隨你的心，重視人際與情感的交流。" },
+            { name: "戰車", icon: "🛒", key: "意志力", desc: "只要堅持到底，克服眼前的障礙，勝利終將屬於你。" },
+            { name: "力量", icon: "🦁", key: "勇氣", desc: "以柔克剛，用內在的堅定與耐心來化解外在的衝突。" },
+            { name: "隱士", icon: "🏮", key: "反思", desc: "暫時獨處一下，向內尋找智慧，現在不是行動的最佳時機。" },
+            { name: "命運之輪", icon: "🎡", key: "改變", desc: "順勢而為，幸運女神正在向你微笑，把握轉機。" },
+            { name: "正義", icon: "⚖️", key: "平衡", desc: "誠實面對自己，做出公正的判斷，因果循環自有定數。" },
+            { name: "死神", icon: "💀", key: "重生", desc: "結束是新的開始，放下過去不再適合你的人事物。" },
+            { name: "節制", icon: "🏺", key: "調和", desc: "保持中庸之道，尋求合作與平衡，不要過度極端。" },
+            { name: "星星", icon: "🌟", key: "希望", desc: "保持樂觀與信念，你的願望正在慢慢實現中。" },
+            { name: "月亮", icon: "🌙", key: "不安", desc: "眼前可能有些迷霧，不要被恐懼蒙蔽，相信你的直覺。" },
+            { name: "太陽", icon: "☀️", key: "成功", desc: "充滿活力與喜悅的一天，所有的陰霾都將一掃而空。" },
+            { name: "世界", icon: "🌍", key: "圓滿", desc: "一個階段的完美結束，享受你的成就，準備迎接新旅程。" }
+        ];
+
+        const textTemplates = {
+            career: { past: "早年即展現【{Trait}】的潛質，求學階段雖有波折，但基礎打得相當紮實。", present: "目前正處於事業的關鍵期，【{Trait}】的特質讓你能在職場上獨當一面。", future: "未來的格局將更加宏大，適合往【{Trait}】相關領域深耕，晚年將享有極高的聲望。" },
+            love: { past: "過去在感情上較為【{Trait}】，經歷過幾段深刻的緣分，讓你更懂自己。", present: "近期的桃花運勢與【{Trait}】有關，建議多參與社交活動，若有伴侶需多溝通。", future: "未來的感情生活將趨於穩定，【{Trait}】的特質將轉化為對伴侶的深情與責任。" },
+            family: { past: "原生家庭給予你的影響深遠，【{Trait}】的氛圍造就了你現在的性格。", present: "目前家庭是你打拼的後盾，雖然偶有【{Trait}】的情況，但整體運勢是向上的。", future: "晚年將享有天倫之樂，【{Trait}】的家庭觀念將傳承給下一代，家運昌隆。" },
+            health: { past: "幼年體質尚可，但需注意【{Trait}】相關的小毛病，過去可能忽略了警訊。", present: "近期工作壓力較大，容易引發【{Trait}】的不適。建議調整作息，多攝取天然食物。", future: "隨著年齡增長，需特別保養【{Trait}】部位。若能保持規律運動，晚年身體將硬朗。" }
+        };
+
+        const dailyConfig = {
+            colors: ["皇家金", "深海藍", "酒紅色", "森林綠", "珍珠白", "曜石黑", "薰衣草紫"],
+            directions: ["北方", "南方", "東方", "西方", "東北", "西北", "東南", "西南"],
+            actionsYi: ["簽約", "告白", "剪髮", "運動", "冥想", "閱讀", "聚餐", "投資", "大掃除"],
+            actionsJi: ["爭吵", "作保", "熬夜", "八卦", "暴食", "借錢", "遠行", "急躁"]
+        };
+
+        let currentStar = "紫微星";
+        let currentBlood = "A";
+        let currentLifeTab = "career";
+        let isFlipped = false;
+
+        function analyze() {
+            const name = document.getElementById('username').value;
+            const date = document.getElementById('birthdate').value;
+            const time = parseInt(document.getElementById('birthtime').value);
+            const blood = document.getElementById('blood').value;
+
+            if (!date) { alert("請輸入出生日期"); return; }
+
+            document.getElementById('input-form').style.display = 'none';
+            document.getElementById('loader').style.display = 'flex';
+
+            setTimeout(() => {
+                calculate(name, date, time, blood);
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('result-section').style.display = 'block';
+            }, 1500);
+        }
+
+        function calculate(name, dateStr, time, blood) {
+            const d = new Date(dateStr);
+            const seed = d.getFullYear() + d.getMonth() + d.getDate() + time + blood.length;
+            const starKeys = Object.keys(starTraits);
+            currentStar = starKeys[seed % starKeys.length];
+            currentBlood = blood;
+            const starInfo = starTraits[currentStar];
+
+            document.getElementById('user-star').innerText = currentStar;
+            document.getElementById('user-desc').innerText = `五行屬${starInfo.type} ‧ ${blood}型特質`;
+            document.getElementById('user-blood').innerText = blood + "型";
+
+            updateDailyView(starInfo, seed);
+            updateLifeTimeline("career");
+        }
+
+        function updateDailyView(starInfo, seed) {
+            const today = new Date();
+            const todaySeed = today.getDate() + today.getMonth() + seed;
+            
+            document.getElementById('today-date').innerText = `${today.getFullYear()}/${today.getMonth()+1}/${today.getDate()}`;
+            document.getElementById('d-color').innerText = dailyConfig.colors[todaySeed % 7];
+            document.getElementById('d-num').innerText = (todaySeed % 9) + 1;
+            document.getElementById('d-dir').innerText = dailyConfig.directions[todaySeed % 8];
+            document.getElementById('d-yi').innerText = `${dailyConfig.actionsYi[todaySeed % 9]}、${dailyConfig.actionsYi[(todaySeed+1)%9]}`;
+            document.getElementById('d-ji').innerText = `${dailyConfig.actionsJi[todaySeed % 8]}、${dailyConfig.actionsJi[(todaySeed+2)%8]}`;
+            
+            const tips = ["低調行事，避免鋒芒太露", "貴人運旺，適合求助長輩", "財運不錯，但注意衝動消費", "情緒易波動，建議保持冷靜", "桃花朵朵開，留意身邊異性"];
+            document.getElementById('d-advice').innerHTML = `💡 <b>紫微指引：</b>${tips[todaySeed % 5]}。<br>受${currentBlood}型血影響，今日行事風格宜${currentBlood==='B'||currentBlood==='AB'?'保持彈性':'穩紮穩打'}。`;
+        }
+
+        function flipTarot() {
+            if(isFlipped) return;
+            isFlipped = true;
+            const cardObj = document.getElementById('tarot-obj');
+            cardObj.classList.add('is-flipped');
+            
+            const randIndex = Math.floor(Math.random() * tarotDeck.length);
+            const card = tarotDeck[randIndex];
+
+            setTimeout(() => {
+                document.getElementById('tarot-img').innerText = card.icon;
+                document.getElementById('tarot-name').innerText = card.name;
+                document.getElementById('tarot-key').innerText = card.key;
+                document.getElementById('tarot-desc').innerText = card.desc;
+                document.getElementById('tarot-desc-box').style.display = 'block';
+            }, 300);
+        }
+
+        function resetTarot(e) {
+            e.stopPropagation();
+            const cardObj = document.getElementById('tarot-obj');
+            cardObj.classList.remove('is-flipped');
+            document.getElementById('tarot-desc-box').style.display = 'none';
+            isFlipped = false;
+        }
+
+        function updateLifeTimeline(category) {
+            currentLifeTab = category;
+            const starInfo = starTraits[currentStar];
+            const keywords = starInfo[category].split('/'); 
+            const tpl = textTemplates[category];
+            
+            const pastText = tpl.past.replace(/{Trait}/g, keywords[0]);
+            const presentText = tpl.present.replace(/{Trait}/g, keywords[1] || keywords[0]);
+            const futureText = tpl.future.replace(/{Trait}/g, keywords[2] || keywords[0]);
+
+            const doms = [document.getElementById('tl-past'), document.getElementById('tl-present'), document.getElementById('tl-future')];
+            doms.forEach(el => { el.classList.remove('fade-in-text'); void el.offsetWidth; el.classList.add('fade-in-text'); });
+
+            document.getElementById('tl-past').innerHTML = pastText;
+            document.getElementById('tl-present').innerHTML = presentText;
+            document.getElementById('tl-future').innerHTML = futureText;
+        }
+
+        function switchMainTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.content-view').forEach(v => v.classList.remove('active'));
+            if(tab === 'daily') {
+                document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+                document.getElementById('view-daily').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+                document.getElementById('view-life').classList.add('active');
+                updateLifeTimeline(currentLifeTab);
+            }
+        }
+
+        function switchLifeSubTab(category) {
+            const buttons = document.querySelectorAll('.sub-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            const map = { 'career': 0, 'love': 1, 'family': 2, 'health': 3 };
+            buttons[map[category]].classList.add('active');
+            updateLifeTimeline(category);
+        }
+
+        document.getElementById('birthdate').max = new Date().toISOString().split("T")[0];
+    </script>
+</body>
+</html>
